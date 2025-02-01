@@ -4,7 +4,7 @@ from docx import Document
 import re
 import argparse
 
-
+# 提取加粗的关键词
 def extract_bold_text(doc):
     bold_texts = []
     for para in doc.paragraphs:
@@ -24,6 +24,7 @@ def extract_bold_text(doc):
 
     return bold_texts
 
+# 提取两个关键词间的文字
 def extract_text_between(doc, keyword1, keyword2):
     content = ""
     found_keyword1 = False
@@ -47,7 +48,7 @@ def extract_text_between(doc, keyword1, keyword2):
     else:
         return "未找到这两个关键词之间的内容"
 
-# 清理文本中的标点符号
+# 将文本中的中文标点符号转换成英文
 def clean_punctuation(text):
     # 定义中文符号与英文符号的映射
     punctuation_map = {
@@ -75,7 +76,7 @@ def extract_data_from_docx(doc_path):
     doc = Document(doc_path)
     data = []
     ques_key=[]
-    ans_key=['诊断','用药情况','是否根据病原学结果调整','出院后是否继续治疗','治疗结局','住院天数']
+    ans_key=['诊断','用药情况','是否根据病原学结果调整','出院后是否继续治疗','治疗结局','住院天数','出院带药情况']
 
     question = {}
     answer = {}
@@ -89,6 +90,15 @@ def extract_data_from_docx(doc_path):
         key = clean_string(clean_punctuation(keyword1))
         content = extract_text_between(doc, keyword1, keyword2)
         value = clean_string(clean_punctuation(content))
+
+        if key == '细菌培养及药敏':
+            for table in doc.tables:
+                # 遍历表格中的每一行
+                for row in table.rows:
+                    if '>' in row.cells[1].text:
+                        value += ' '+row.cells[0].text+row.cells[1].text+' '
+                        value = clean_punctuation(value)
+                        # print(row.cells[0].text, row.cells[1].text)
 
         if len(content) > 1:
             if key not in ans_key:
